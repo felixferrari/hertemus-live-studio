@@ -12,9 +12,15 @@ Três temas de verdade, em formato OBS Variant Theme (.ovt), herdando do Yami of
 
 Os arquivos definem cores de superfícies, seleção, botões, abas, campos, rolagem, títulos de dock e hierarquia visual. O tema-base Yami não foi modificado.
 
+## Primeiro layout funcional incluído no código-fonte
+
+O fork possui uma nova ação opcional no menu de Docks: HERTEMUS | Estudio Essencial. Ela coloca Cenas, Fontes, Mixer e Controles lado a lado na parte inferior e oculta Transições para dar mais espaço à prévia. O usuário pode retornar ao layout OBS padrão em Docks -> Redefinir Docks. Nada é aplicado automaticamente em instalações já configuradas.
+
+IMPORTANTE: essa ação foi implementada em frontend/widgets/OBSBasic.cpp, exige compilar o fork para aparecer e ainda não foi testada em um executável Windows. Os temas .ovt, por outro lado, podem ser testados sem compilar, inclusive em um OBS oficial portátil.
+
 ## Limite da etapa
 
-As imagens conceituais NÃO são telas executáveis. Um tema visual não implementa painel lateral novo, layout de docks, chat unificado, alertas ou multistream. Esses recursos terão implementação separada no frontend Qt/C++ e testes.
+As imagens conceituais NÃO são telas executáveis. O primeiro preset Qt reorganiza docks existentes; não cria ainda a barra lateral nova, o chat unificado, o multistream ou os alertas. Esses recursos terão implementação separada e testes.
 
 ## Testar temas sem compilar e sem mexer no OBS principal (Windows)
 
@@ -36,7 +42,7 @@ Para desenvolvimento de temas no OBS 30.2+, a seção [Appearance] do user.ini p
 
 ## Etapas seguintes
 
-1. Estúdio Essencial: layout real dos docks de cenas, fontes, prévia, mixer e controles, redimensionável e reversível.
+1. Estúdio Essencial: feito como preset opcional de dock; falta validar em build Windows e refinar dimensões em monitores diferentes.
 2. Identidade: ícones e logotipo HERTEMUS originais, sem substituí-los no OBS de produção.
 3. Módulos futuros: chat unificado, multistream, alertas e integrações, testados individualmente.
 
