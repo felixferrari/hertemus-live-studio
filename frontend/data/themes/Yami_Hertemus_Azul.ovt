@@ -1,0 +1,126 @@
+/* HERTEMUS Live Studio — Tema Azul (variante do Yami oficial).
+ * Compatibilidade: OBS Studio 30.2+; sem alterações no motor de transmissão.
+ * Os três temas compartilham a mesma organização visual e variam na paleta.
+ * Licenciamento: arquivos deste fork sob os termos do projeto OBS.
+ */
+@OBSThemeMeta {
+    name: 'HERTEMUS | Azul';
+    id: 'br.com.hertemus.Yami.Azul';
+    extends: 'com.obsproject.Yami';
+    author: 'HERTEMUS';
+    dark: 'true';
+}
+
+@OBSThemeVars {
+    /* Identidade visual */
+    --primary: #088CFF;
+    --primary_light: #36B9FF;
+    --primary_lighter: #9DDDFF;
+    --primary_dark: #0867CD;
+    --primary_darker: #10417D;
+
+    /* Superficies: fundo / paineis / controles */
+    --grey1: #2A4B6D;
+    --grey2: #1F3A57;
+    --grey3: #162942;
+    --grey4: #1F3A57;
+    --grey5: #162942;
+    --grey6: #101D30;
+    --grey7: #0A1423;
+    --grey8: #070F1D;
+    --bg_window: #0A1423;
+    --bg_base: #101D30;
+    --bg_preview: #070F1D;
+    --border_color: #2A4B6D;
+
+    /* Hierarquia e leitura */
+    --text: #F7F5FC;
+    --text_light: #FFFFFF;
+    --text_muted: #A1BBD5;
+
+    /* Inputs e selecao */
+    --input_bg: #162942;
+    --input_bg_hover: #1F3A57;
+    --input_bg_focus: #101D30;
+    --input_border: #2A4B6D;
+    --input_border_hover: #36B9FF;
+    --input_border_focus: #088CFF;
+    --list_item_bg_selected: #17579A;
+    --list_item_bg_hover: #244C78;
+
+    /* Botoes / tabs / rolagem */
+    --button_bg: #162942;
+    --button_bg_hover: #244C78;
+    --button_bg_down: #17579A;
+    --button_border: #2A4B6D;
+    --button_border_hover: #36B9FF;
+    --button_border_focus: #088CFF;
+    --tab_bg: #162942;
+    --tab_bg_hover: #244C78;
+    --tab_bg_down: #17579A;
+    --tab_border: #2A4B6D;
+    --tab_border_hover: #36B9FF;
+    --tab_border_selected: #088CFF;
+    --scrollbar_handle: #2A4B6D;
+    --scrollbar_hover: #088CFF;
+    --scrollbar_down: #0867CD;
+    --scrollbar_border: #101D30;
+    --toolbutton_bg: #162942;
+    --toolbutton_bg_hover: #244C78;
+    --toolbutton_bg_down: #17579A;
+
+    /* Controles mais confortaveis, sem copiar o tema-base Yami */
+    --border_radius: 6px;
+    --border_radius_small: 4px;
+    --border_radius_large: 9px;
+    --highlight_color: #36B9FF;
+}
+
+/* Paineis OBS: separacao visual discreta e titulo legivel. */
+QDockWidget::title {
+    background-color: #162942;
+    color: #F7F5FC;
+    border-bottom: 1px solid #2A4B6D;
+    padding: 8px 10px;
+    text-align: left;
+}
+QDockWidget > QWidget {
+    background-color: #101D30;
+}
+QDockWidget::close-button:hover,
+QDockWidget::float-button:hover {
+    background-color: #244C78;
+}
+QTabBar::tab:selected {
+    border-bottom: 2px solid #088CFF;
+}
+QMenu::separator {
+    background-color: #2A4B6D;
+}
+QMenu::item:selected,
+QListWidget::item:selected,
+SceneTree::item:selected,
+SourceTree::item:selected {
+    background-color: #17579A;
+    color: #FFFFFF;
+}
+QMenu::item:hover,
+QListWidget::item:hover,
+SceneTree::item:hover,
+SourceTree::item:hover {
+    background-color: #244C78;
+}
+/* Estado de foco reconhecivel sem tirar a indicacao de live/gravacao. */
+QLineEdit:focus,
+QPlainTextEdit:focus,
+QComboBox:focus,
+QSpinBox:focus,
+QDoubleSpinBox:focus {
+    border-color: #088CFF;
+}
+QToolButton:hover {
+    border-color: #36B9FF;
+}
+QScrollBar::handle:hover {
+    background-color: #088CFF;
+}
