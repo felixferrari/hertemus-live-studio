@@ -180,6 +180,45 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 	/* Parenting is done there so controls will be deleted alongside controlsDock */
 	controlsDock->setWidget(controls);
 
+	/*
+	 * HERTEMUS — optional streamlined workspace.
+	 * This action is deliberately opt-in: existing OBS users keep their
+	 * custom dock placement unless they request the HERTEMUS layout.
+	 * "Reset Docks" in the same menu remains the stock recovery path.
+	 */
+	QAction *hertemusEssentialLayout = ui->menuDocks->addAction(QStringLiteral("HERTEMUS | Estudio Essencial"));
+	connect(hertemusEssentialLayout, &QAction::triggered, this, [this]() {
+		/* Keep the preview central and group essential docks along the bottom. */
+		ui->sideDocks->setChecked(false);
+
+		ui->scenesDock->setFloating(false);
+		ui->sourcesDock->setFloating(false);
+		ui->mixerDock->setFloating(false);
+		controlsDock->setFloating(false);
+
+		addDockWidget(Qt::BottomDockWidgetArea, ui->scenesDock);
+		splitDockWidget(ui->scenesDock, ui->sourcesDock, Qt::Horizontal);
+		splitDockWidget(ui->sourcesDock, ui->mixerDock, Qt::Horizontal);
+		splitDockWidget(ui->mixerDock, controlsDock, Qt::Horizontal);
+
+		ui->scenesDock->setVisible(true);
+		ui->sourcesDock->setVisible(true);
+		ui->mixerDock->setVisible(true);
+		controlsDock->setVisible(true);
+
+		/* Transition controls stay accessible via the existing Docks menu. */
+		ui->transitionsDock->setVisible(false);
+
+		const int totalWidth = width();
+		const int dockHeight = height() * 28 / 100;
+		QList<QDockWidget *> essentialDocks{ui->scenesDock, ui->sourcesDock, ui->mixerDock, controlsDock};
+		resizeDocks(essentialDocks,
+			    {totalWidth * 23 / 100, totalWidth * 26 / 100, totalWidth * 31 / 100,
+			     totalWidth * 20 / 100},
+			    Qt::Horizontal);
+		resizeDocks(essentialDocks, {dockHeight, dockHeight, dockHeight, dockHeight}, Qt::Vertical);
+	});
+
 	connect(controls, &OBSBasicControls::StreamButtonClicked, this, &OBSBasic::StreamActionTriggered);
 
 	connect(controls, &OBSBasicControls::StartStreamMenuActionClicked, this, &OBSBasic::StartStreaming);
