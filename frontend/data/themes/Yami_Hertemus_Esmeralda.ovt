@@ -1,0 +1,126 @@
+/* HERTEMUS Live Studio — Tema Esmeralda (variante do Yami oficial).
+ * Compatibilidade: OBS Studio 30.2+; sem alterações no motor de transmissão.
+ * Os três temas compartilham a mesma organização visual e variam na paleta.
+ * Licenciamento: arquivos deste fork sob os termos do projeto OBS.
+ */
+@OBSThemeMeta {
+    name: 'HERTEMUS | Esmeralda';
+    id: 'br.com.hertemus.Yami.Esmeralda';
+    extends: 'com.obsproject.Yami';
+    author: 'HERTEMUS';
+    dark: 'true';
+}
+
+@OBSThemeVars {
+    /* Identidade visual */
+    --primary: #00C98A;
+    --primary_light: #38E6AB;
+    --primary_lighter: #8AFFD5;
+    --primary_dark: #008F67;
+    --primary_darker: #006648;
+
+    /* Superficies: fundo / paineis / controles */
+    --grey1: #2C5145;
+    --grey2: #204238;
+    --grey3: #143027;
+    --grey4: #204238;
+    --grey5: #143027;
+    --grey6: #0D211C;
+    --grey7: #091815;
+    --grey8: #06110F;
+    --bg_window: #091815;
+    --bg_base: #0D211C;
+    --bg_preview: #06110F;
+    --border_color: #2C5145;
+
+    /* Hierarquia e leitura */
+    --text: #F7F5FC;
+    --text_light: #FFFFFF;
+    --text_muted: #9CBEB0;
+
+    /* Inputs e selecao */
+    --input_bg: #143027;
+    --input_bg_hover: #204238;
+    --input_bg_focus: #0D211C;
+    --input_border: #2C5145;
+    --input_border_hover: #38E6AB;
+    --input_border_focus: #00C98A;
+    --list_item_bg_selected: #136C4D;
+    --list_item_bg_hover: #205743;
+
+    /* Botoes / tabs / rolagem */
+    --button_bg: #143027;
+    --button_bg_hover: #205743;
+    --button_bg_down: #136C4D;
+    --button_border: #2C5145;
+    --button_border_hover: #38E6AB;
+    --button_border_focus: #00C98A;
+    --tab_bg: #143027;
+    --tab_bg_hover: #205743;
+    --tab_bg_down: #136C4D;
+    --tab_border: #2C5145;
+    --tab_border_hover: #38E6AB;
+    --tab_border_selected: #00C98A;
+    --scrollbar_handle: #2C5145;
+    --scrollbar_hover: #00C98A;
+    --scrollbar_down: #008F67;
+    --scrollbar_border: #0D211C;
+    --toolbutton_bg: #143027;
+    --toolbutton_bg_hover: #205743;
+    --toolbutton_bg_down: #136C4D;
+
+    /* Controles mais confortaveis, sem copiar o tema-base Yami */
+    --border_radius: 6px;
+    --border_radius_small: 4px;
+    --border_radius_large: 9px;
+    --highlight_color: #38E6AB;
+}
+
+/* Paineis OBS: separacao visual discreta e titulo legivel. */
+QDockWidget::title {
+    background-color: #143027;
+    color: #F7F5FC;
+    border-bottom: 1px solid #2C5145;
+    padding: 8px 10px;
+    text-align: left;
+}
+QDockWidget > QWidget {
+    background-color: #0D211C;
+}
+QDockWidget::close-button:hover,
+QDockWidget::float-button:hover {
+    background-color: #205743;
+}
+QTabBar::tab:selected {
+    border-bottom: 2px solid #00C98A;
+}
+QMenu::separator {
+    background-color: #2C5145;
+}
+QMenu::item:selected,
+QListWidget::item:selected,
+SceneTree::item:selected,
+SourceTree::item:selected {
+    background-color: #136C4D;
+    color: #FFFFFF;
+}
+QMenu::item:hover,
+QListWidget::item:hover,
+SceneTree::item:hover,
+SourceTree::item:hover {
+    background-color: #205743;
+}
+/* Estado de foco reconhecivel sem tirar a indicacao de live/gravacao. */
+QLineEdit:focus,
+QPlainTextEdit:focus,
+QComboBox:focus,
+QSpinBox:focus,
+QDoubleSpinBox:focus {
+    border-color: #00C98A;
+}
+QToolButton:hover {
+    border-color: #38E6AB;
+}
+QScrollBar::handle:hover {
+    background-color: #00C98A;
+}
