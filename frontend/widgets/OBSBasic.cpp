@@ -59,6 +59,8 @@
 
 #include <QActionGroup>
 #include <QThread>
+#include <QProcess>
+#include <QFileInfo>
 #include <QWidgetAction>
 
 #include <mutex>
@@ -1152,6 +1154,10 @@ void OBSBasic::OBSInit()
 		QAction *hertemusAlerts = new QAction(QStringLiteral("HERTEMUS | Alertas"), this);
 		ui->menuDocks->insertAction(ui->scenesDock->toggleViewAction(), hertemusAlerts);
 		connect(hertemusAlerts, &QAction::triggered, this, [this]() {
+			const QString alertsDir = QCoreApplication::applicationDirPath() + QStringLiteral("/hertemus-alerts");
+			const QString launcher = alertsDir + QStringLiteral("/INICIAR HERTEMUS ALERTS.bat");
+			if (QFileInfo::exists(alertsDir + QStringLiteral("/server.js")) && QFileInfo::exists(launcher))
+				QProcess::startDetached(QStringLiteral("cmd.exe"), {QStringLiteral("/c"), launcher}, alertsDir);
 			AddExtraBrowserDock(QStringLiteral("HERTEMUS | Alertas"),
 					    QStringLiteral("http://127.0.0.1:3000/"),
 					    QStringLiteral("hertemus-alerts"), false);

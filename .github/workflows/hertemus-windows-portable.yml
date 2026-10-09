@@ -47,6 +47,10 @@ jobs:
           New-Item -ItemType Directory -Path $themes -Force | Out-Null
           Copy-Item frontend/data/themes/Yami_Hertemus_*.ovt $themes -Force
 
+          $alerts = Join-Path $portable 'hertemus-alerts'
+          New-Item -ItemType Directory -Path $alerts -Force | Out-Null
+          Copy-Item additional_install_files/hertemus-alerts/* $alerts -Recurse -Force
+
           Compress-Archive -Path (Join-Path $portable '*') `
             -DestinationPath 'HERTEMUS-Live-Studio-windows-x64-portable.zip' -CompressionLevel Optimal
 

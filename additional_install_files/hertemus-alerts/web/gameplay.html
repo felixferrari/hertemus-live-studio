@@ -1,0 +1,29 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HERTEMUS · Molduras de Gameplay e Câmera</title>
+<script src="/assets/scenes/catalog.js"></script>
+<style>
+html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:transparent!important}*{box-sizing:border-box}
+#stage{position:absolute;inset:0;overflow:hidden;pointer-events:none;background:transparent!important}
+#scene{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;transition:opacity .25s ease}
+#cam{position:absolute;left:4%;top:5%;width:25%;aspect-ratio:16/9;border:12px solid transparent;display:none;pointer-events:none;transition:opacity .25s ease;box-sizing:border-box}
+#cam::after{content:'';position:absolute;inset:2%;border-radius:2px;box-shadow:inset 0 0 6px #ffffff14;opacity:.4}
+.animated #scene{animation:breath 6s ease-in-out infinite}.animated #cam{animation:camBreath 7s ease-in-out infinite}
+@keyframes breath{0%,100%{filter:brightness(1) drop-shadow(0 0 1px #8a4ad522)}50%{filter:brightness(1.07) drop-shadow(0 0 5px #8a4ad544)}}
+@keyframes camBreath{0%,100%{filter:brightness(1)}50%{filter:brightness(1.09)}}
+@media(prefers-reduced-motion:reduce){.animated #scene,.animated #cam{animation:none}}
+</style></head><body><div id="stage"><img id="scene" alt=""><div id="cam"></div></div>
+<script>
+const mode=location.pathname==='/camera'?'camera':'gameplay';
+const catalog=window.HERTEMUS_SCENES||{frames:[],cameras:[]};let prev='';
+function clamp(n,a,b){return Math.min(b,Math.max(a,Number.isFinite(+n)?+n:a))}
+async function refresh(){try{const c=await fetch('/api/config',{cache:'no-store'}).then(r=>r.json());const f=catalog.frames.find(x=>x.id===c.sceneTheme)||catalog.frames[0];const camera=catalog.cameras.find(x=>x.id===c.sceneCameraStyle)||catalog.cameras[0];
+const stage=document.getElementById('stage'),scene=document.getElementById('scene'),cam=document.getElementById('cam');
+scene.style.display=mode==='camera'?'none':'block';if(f&&scene.getAttribute('src')!==f.src)scene.setAttribute('src',f.src);
+scene.style.opacity=clamp(c.sceneOverlayOpacity??1,0,1);
+cam.style.display=mode==='camera'||c.sceneCameraEnabled===true?'block':'none';
+cam.style.left=clamp(c.sceneCameraX??4,0,85)+'%';cam.style.top=clamp(c.sceneCameraY??5,0,80)+'%';cam.style.width=clamp(c.sceneCameraWidth??24,12,47)+'%';
+cam.style.opacity=clamp(c.sceneCameraOpacity??1,0,1);
+if(camera){const val=`url("${camera.src}")`;if(cam.style.borderImageSource!==val)cam.style.borderImageSource=val;cam.style.borderImageSlice='12% 9%';cam.style.borderImageWidth='12px';cam.style.borderImageRepeat='stretch';}
+stage.classList.toggle('animated',c.sceneMotionEnabled!==false);
+}catch(e){/* Keep last valid frame if server briefly reconnects */}}
+refresh();setInterval(refresh,1800);
+</script></body></html>
