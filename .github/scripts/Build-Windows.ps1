@@ -52,7 +52,7 @@ function Build {
 
     $CmakeArgs = @('--preset', "windows-ci-${Target}")
     if ($VersionOverride) {
-        $CmakeArgs = @("-DOBS_VERSION_OVERRIDE:STRING=${VersionOverride}") + $CmakeArgs
+        $CmakeArgs += "-DOBS_VERSION_OVERRIDE:STRING=${VersionOverride}"
     }
 
     $CmakeBuildArgs = @('--build')
