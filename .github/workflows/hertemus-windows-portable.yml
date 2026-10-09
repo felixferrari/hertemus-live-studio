@@ -51,6 +51,11 @@ jobs:
           New-Item -ItemType Directory -Path $alerts -Force | Out-Null
           Copy-Item additional_install_files/hertemus-alerts/* $alerts -Recurse -Force
 
+          $nodeArchive = Join-Path $env:RUNNER_TEMP 'node-portable.zip'
+          Invoke-WebRequest 'https://nodejs.org/dist/v22.14.0/node-v22.14.0-win-x64.zip' -OutFile $nodeArchive
+          Expand-Archive -LiteralPath $nodeArchive -DestinationPath (Join-Path $env:RUNNER_TEMP 'node-portable') -Force
+          Copy-Item (Join-Path $env:RUNNER_TEMP 'node-portable/node-v22.14.0-win-x64/node.exe') $alerts -Force
+
           Compress-Archive -Path (Join-Path $portable '*') `
             -DestinationPath 'HERTEMUS-Live-Studio-windows-x64-portable.zip' -CompressionLevel Optimal
 
