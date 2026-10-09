@@ -62,6 +62,10 @@
 #include <QProcess>
 #include <QFileInfo>
 #include <QWidgetAction>
+#include <QDockWidget>
+#include <QLabel>
+#include <QPushButton>
+#include <QVBoxLayout>
 
 #include <mutex>
 #include <sstream>
@@ -189,6 +193,70 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 	 * "Reset Docks" in the same menu remains the stock recovery path.
 	 */
 	ui->menuDocks->addSeparator();
+	QAction *hertemusStudioLayout = ui->menuDocks->addAction(QStringLiteral("HERTEMUS | Studio Interface"));
+	hertemusStudioLayout->setCheckable(true);
+	connect(hertemusStudioLayout, &QAction::triggered, this, [this, hertemusStudioLayout]() {
+		QDockWidget *sidebar = findChild<QDockWidget *>(QStringLiteral("hertemusNavigationDock"));
+		if (!sidebar) {
+			sidebar = new QDockWidget(QStringLiteral("HERTEMUS"), this);
+			sidebar->setObjectName(QStringLiteral("hertemusNavigationDock"));
+			sidebar->setFeatures(QDockWidget::NoDockWidgetFeatures);
+			sidebar->setAllowedAreas(Qt::LeftDockWidgetArea);
+			sidebar->setMinimumWidth(178);
+			sidebar->setMaximumWidth(230);
+
+			QWidget *content = new QWidget(sidebar);
+			content->setObjectName(QStringLiteral("hertemusNavigation"));
+			QVBoxLayout *layout = new QVBoxLayout(content);
+			layout->setContentsMargins(14, 18, 14, 14);
+			layout->setSpacing(7);
+
+			QLabel *brand = new QLabel(QStringLiteral("◢  HERTEMUS\n    LIVE STUDIO"), content);
+			brand->setObjectName(QStringLiteral("hertemusBrand"));
+			layout->addWidget(brand);
+			QLabel *section = new QLabel(QStringLiteral("WORKSPACE"), content);
+			section->setObjectName(QStringLiteral("hertemusSection"));
+			layout->addWidget(section);
+
+			auto addNavigation = [this, layout, content](const QString &text, QDockWidget *dock) {
+				QPushButton *button = new QPushButton(text, content);
+				button->setObjectName(QStringLiteral("hertemusNavButton"));
+				button->setCheckable(false);
+				if (dock)
+					connect(button, &QPushButton::clicked, this, [dock]() {
+						dock->setVisible(true);
+						dock->raise();
+					});
+				layout->addWidget(button);
+			};
+			addNavigation(QStringLiteral("▣  Prévia"), nullptr);
+			addNavigation(QStringLiteral("▤  Cenas"), ui->scenesDock);
+			addNavigation(QStringLiteral("◈  Fontes"), ui->sourcesDock);
+			addNavigation(QStringLiteral("≋  Mixer"), ui->mixerDock);
+			addNavigation(QStringLiteral("●  Controles"), controlsDock);
+			layout->addStretch(1);
+			QLabel *status = new QLabel(QStringLiteral("HERTEMUS\nCREATE • STREAM • BELONG"), content);
+			status->setObjectName(QStringLiteral("hertemusStatus"));
+			layout->addWidget(status);
+
+			content->setStyleSheet(QStringLiteral(
+				"QWidget#hertemusNavigation { background:#0d0b18; border-right:1px solid #332157; }"
+				"QLabel#hertemusBrand { color:#f4efff; font-size:17px; font-weight:700; padding:10px 4px 22px; }"
+				"QLabel#hertemusSection { color:#9c86c8; font-size:10px; font-weight:700; padding:4px; }"
+				"QPushButton#hertemusNavButton { color:#d9d0ee; background:transparent; border:0; border-radius:7px; text-align:left; padding:11px 10px; font-size:12px; }"
+				"QPushButton#hertemusNavButton:hover { background:#211439; color:#ffffff; }"
+				"QLabel#hertemusStatus { color:#816baf; font-size:10px; letter-spacing:2px; padding:8px 4px; }"));
+			sidebar->setWidget(content);
+			addDockWidget(Qt::LeftDockWidgetArea, sidebar);
+		}
+		sidebar->setVisible(hertemusStudioLayout->isChecked());
+		if (hertemusStudioLayout->isChecked()) {
+			ui->scenesDock->setVisible(true);
+			ui->sourcesDock->setVisible(true);
+			ui->mixerDock->setVisible(true);
+			controlsDock->setVisible(true);
+		}
+	});
 	QAction *hertemusEssentialLayout = ui->menuDocks->addAction(QStringLiteral("HERTEMUS | Estudio Essencial"));
 	hertemusEssentialLayout->setCheckable(true);
 	connect(hertemusEssentialLayout, &QAction::triggered, this, [this, hertemusEssentialLayout]() {
