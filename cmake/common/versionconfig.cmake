@@ -38,6 +38,13 @@ elseif(DEFINED OBS_VERSION_OVERRIDE)
   endif()
 endif()
 
+# Fork checkouts may not carry an OBS release tag. Keep development builds
+# packageable instead of interpreting the commit hash as a CMake version.
+if(NOT _obs_version MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+")
+	set(_obs_version "32.0.0-${_obs_version}")
+	set(_obs_version_canonical "32;0;0")
+endif()
+
 # Set beta/rc versions if suffix included in version string
 if(_obs_version MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+-rc[0-9]+")
   string(REGEX REPLACE "[0-9]+\\.[0-9]+\\.[0-9]+-rc([0-9]+).*$" "\\1" _obs_release_candidate ${_obs_version})
