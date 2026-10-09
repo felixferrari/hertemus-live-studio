@@ -1342,6 +1342,19 @@ void OBSBasic::OBSInit()
 		}
 	}
 
+	/* A fresh HERTEMUS portable profile should open in the HERTEMUS workspace
+	 * immediately. Existing OBS profiles keep their saved dock arrangement. */
+	if (portable_mode && !dockStateStr) {
+		QTimer::singleShot(0, this, [this]() {
+			for (QAction *action : ui->menuDocks->actions()) {
+				if (action->text() == QStringLiteral("HERTEMUS | Studio Interface")) {
+					action->trigger();
+					break;
+				}
+			}
+		});
+	}
+
 	bool pre23Defaults = config_get_bool(App()->GetUserConfig(), "General", "Pre23Defaults");
 	if (pre23Defaults) {
 		bool resetDockLock23 = config_get_bool(App()->GetUserConfig(), "General", "ResetDockLock23");
