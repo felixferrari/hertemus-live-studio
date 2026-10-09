@@ -66,6 +66,8 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QCheckBox>
+#include <QHBoxLayout>
 
 #include <mutex>
 #include <sstream>
@@ -313,6 +315,49 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 	connect(controls, &OBSBasicControls::StudioModeButtonClicked, this, &OBSBasic::TogglePreviewProgramMode);
 
 	connect(controls, &OBSBasicControls::SettingsButtonClicked, this, &OBSBasic::on_action_Settings_triggered);
+
+	/* HERTEMUS Broadcast Center: a real control surface backed by OBS's
+	 * streaming actions. Platform connectors will be attached here as they
+	 * become available; no platform is claimed until its connector is active. */
+	QAction *broadcastCenterAction = ui->menuDocks->addAction(QStringLiteral("HERTEMUS | Central de Transmissão"));
+	broadcastCenterAction->setCheckable(true);
+	connect(broadcastCenterAction, &QAction::triggered, this, [this, broadcastCenterAction]() {
+		QDockWidget *dock = findChild<QDockWidget *>(QStringLiteral("hertemusBroadcastCenterDock"));
+		if (!dock) {
+			dock = new QDockWidget(QStringLiteral("HERTEMUS | Central de Transmissão"), this);
+			dock->setObjectName(QStringLiteral("hertemusBroadcastCenterDock"));
+			dock->setMinimumWidth(300);
+			QWidget *panel = new QWidget(dock);
+			QVBoxLayout *layout = new QVBoxLayout(panel);
+			QLabel *title = new QLabel(QStringLiteral("TRANSMISSÃO HERTEMUS"), panel);
+			title->setObjectName(QStringLiteral("broadcastTitle"));
+			layout->addWidget(title);
+			QLabel *hint = new QLabel(QStringLiteral("Selecione os conectores configurados no OBS."), panel);
+			hint->setWordWrap(true);
+			layout->addWidget(hint);
+			for (const QString &name : {QStringLiteral("YouTube"), QStringLiteral("Twitch"), QStringLiteral("Restream")}) {
+				QCheckBox *platform = new QCheckBox(name + QStringLiteral("  •  configuração do OBS"), panel);
+				platform->setEnabled(true);
+				layout->addWidget(platform);
+			}
+			QPushButton *start = new QPushButton(QStringLiteral("Iniciar transmissão"), panel);
+			start->setObjectName(QStringLiteral("broadcastStart"));
+			connect(start, &QPushButton::clicked, this, &OBSBasic::StreamActionTriggered);
+			layout->addWidget(start);
+			QPushButton *settings = new QPushButton(QStringLiteral("Abrir configurações de transmissão"), panel);
+			connect(settings, &QPushButton::clicked, this, &OBSBasic::on_action_Settings_triggered);
+			layout->addWidget(settings);
+			layout->addStretch(1);
+			panel->setStyleSheet(QStringLiteral(
+				"QWidget { background:#100d1c; color:#e9e1fa; }"
+				"QLabel#broadcastTitle { color:#c78cff; font-weight:700; letter-spacing:1px; }"
+				"QPushButton#broadcastStart { background:#7d32d9; color:white; border:0; padding:10px; border-radius:6px; }"
+				"QPushButton#broadcastStart:hover { background:#9749f0; }"));
+			dock->setWidget(panel);
+			addDockWidget(Qt::RightDockWidgetArea, dock);
+		}
+		dock->setVisible(broadcastCenterAction->isChecked());
+	});
 
 	/* Set up transitions combobox connections */
 	connect(this, &OBSBasic::TransitionAdded, this, [this](const QString &name, const QString &uuid) {
