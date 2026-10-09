@@ -2,6 +2,8 @@ name: HERTEMUS Windows Portable
 
 on:
   workflow_dispatch:
+  push:
+    branches: [master]
 
 permissions:
   contents: read
