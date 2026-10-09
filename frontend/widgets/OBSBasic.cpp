@@ -68,6 +68,7 @@
 #include <QVBoxLayout>
 #include <QCheckBox>
 #include <QHBoxLayout>
+#include <QTimer>
 
 #include <mutex>
 #include <sstream>
@@ -1271,9 +1272,15 @@ void OBSBasic::OBSInit()
 			const QString launcher = alertsDir + QStringLiteral("/INICIAR HERTEMUS ALERTS.bat");
 			if (QFileInfo::exists(alertsDir + QStringLiteral("/server.js")) && QFileInfo::exists(launcher))
 				QProcess::startDetached(QStringLiteral("cmd.exe"), {QStringLiteral("/c"), launcher}, alertsDir);
-			AddExtraBrowserDock(QStringLiteral("HERTEMUS | Alertas"),
-					    QStringLiteral("http://127.0.0.1:3000/"),
-					    QStringLiteral("hertemus-alerts"), false);
+
+			/* Give the bundled Node process time to bind localhost before the
+			 * browser dock is created. This avoids the misleading connection
+			 * refused page seen on first launch. */
+			QTimer::singleShot(1500, this, [this]() {
+				AddExtraBrowserDock(QStringLiteral("HERTEMUS | Alertas"),
+						    QStringLiteral("http://127.0.0.1:3000/"),
+						    QStringLiteral("hertemus-alerts"), false);
+			});
 		});
 
 		LoadExtraBrowserDocks();
