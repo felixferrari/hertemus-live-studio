@@ -262,7 +262,34 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			sidebar->setWidget(content);
 			addDockWidget(Qt::LeftDockWidgetArea, sidebar);
 		}
+		QDockWidget *header = findChild<QDockWidget *>(QStringLiteral("hertemusHeaderDock"));
+		if (!header) {
+			header = new QDockWidget(QStringLiteral("HERTEMUS Live Studio"), this);
+			header->setObjectName(QStringLiteral("hertemusHeaderDock"));
+			header->setFeatures(QDockWidget::NoDockWidgetFeatures);
+			header->setAllowedAreas(Qt::TopDockWidgetArea);
+			QWidget *bar = new QWidget(header);
+			QHBoxLayout *barLayout = new QHBoxLayout(bar);
+			barLayout->setContentsMargins(18, 7, 18, 7);
+			QLabel *brand = new QLabel(QStringLiteral("◢  HERTEMUS  <span style='font-weight:400'>Live Studio</span>"), bar);
+			brand->setTextFormat(Qt::RichText);
+			QLabel *version = new QLabel(QStringLiteral("v1.0.0  •  PRO"), bar);
+			QLabel *stats = new QLabel(QStringLiteral("CPU  --    GPU  --    FPS  --    <span style='color:#56e39f'>● Systems ready</span>"), bar);
+			stats->setTextFormat(Qt::RichText);
+			barLayout->addWidget(brand);
+			barLayout->addStretch(1);
+			barLayout->addWidget(version);
+			barLayout->addSpacing(28);
+			barLayout->addWidget(stats);
+			bar->setStyleSheet(QStringLiteral(
+				"QWidget { background:#100c1d; border-bottom:1px solid #38245c; }"
+				"QLabel { color:#e9e1fa; font-size:12px; font-weight:600; }"
+				"QLabel:first-child { color:#b96cff; font-size:16px; }"));
+			header->setWidget(bar);
+			addDockWidget(Qt::TopDockWidgetArea, header);
+		}
 		sidebar->setVisible(hertemusStudioLayout->isChecked());
+		header->setVisible(hertemusStudioLayout->isChecked());
 		if (hertemusStudioLayout->isChecked()) {
 			ui->scenesDock->setVisible(true);
 			ui->sourcesDock->setVisible(true);
