@@ -42,6 +42,14 @@ jobs:
           New-Item -ItemType Directory -Path $portable -Force | Out-Null
           Copy-Item -Path (Join-Path $install '*') -Destination $portable -Recurse -Force
           New-Item -ItemType File -Path (Join-Path $portable 'portable_mode.txt') -Force | Out-Null
+          Copy-Item 'additional_install_files/INICIAR HERTEMUS LIVE STUDIO.bat' $portable -Force
+          Set-Content -Path (Join-Path $portable 'LEIA-ME.txt') -Value @(
+            'HERTEMUS Live Studio - modo portatil'
+            ''
+            'Execute INICIAR HERTEMUS LIVE STUDIO.bat para abrir esta copia isolada.'
+            'O OBS instalado no Windows nao e alterado por este pacote.'
+            'O painel HERTEMUS Alerts e iniciado pelo menu Docks da interface.'
+          ) -Encoding UTF8
 
           $themes = Join-Path $portable 'data/obs-studio/themes'
           New-Item -ItemType Directory -Path $themes -Force | Out-Null
