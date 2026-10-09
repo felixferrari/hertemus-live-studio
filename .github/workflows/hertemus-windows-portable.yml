@@ -1,0 +1,55 @@
+name: HERTEMUS Windows Portable
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build portable HERTEMUS Live Studio
+    runs-on: windows-2025-vs2026
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Build OBS engine and frontend
+        env:
+          CI: true
+        run: >-
+          .github/scripts/Build-Windows.ps1
+          -Target x64
+          -Configuration RelWithDebInfo
+          -VersionOverride 32.0.0
+
+      - name: Create isolated portable package
+        run: |
+          $install = Join-Path $PWD 'build_x64/install'
+          if (-not (Test-Path (Join-Path $install 'bin/64bit/obs64.exe'))) {
+            throw 'obs64.exe was not found in the install tree.'
+          }
+
+          $portable = Join-Path $PWD 'hertemus-live-studio-portable'
+          New-Item -ItemType Directory -Path $portable -Force | Out-Null
+          Copy-Item -Path (Join-Path $install '*') -Destination $portable -Recurse -Force
+          New-Item -ItemType File -Path (Join-Path $portable 'portable_mode.txt') -Force | Out-Null
+
+          $themes = Join-Path $portable 'data/obs-studio/themes'
+          New-Item -ItemType Directory -Path $themes -Force | Out-Null
+          Copy-Item frontend/data/themes/Yami_Hertemus_*.ovt $themes -Force
+
+          Compress-Archive -Path (Join-Path $portable '*') `
+            -DestinationPath 'HERTEMUS-Live-Studio-windows-x64-portable.zip' -CompressionLevel Optimal
+
+      - name: Upload portable ZIP
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: HERTEMUS-Live-Studio-windows-x64-portable
+          path: HERTEMUS-Live-Studio-windows-x64-portable.zip

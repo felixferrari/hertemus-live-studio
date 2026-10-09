@@ -186,8 +186,10 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 	 * custom dock placement unless they request the HERTEMUS layout.
 	 * "Reset Docks" in the same menu remains the stock recovery path.
 	 */
+	ui->menuDocks->addSeparator();
 	QAction *hertemusEssentialLayout = ui->menuDocks->addAction(QStringLiteral("HERTEMUS | Estudio Essencial"));
-	connect(hertemusEssentialLayout, &QAction::triggered, this, [this]() {
+	hertemusEssentialLayout->setCheckable(true);
+	connect(hertemusEssentialLayout, &QAction::triggered, this, [this, hertemusEssentialLayout]() {
 		/* Keep the preview central and group essential docks along the bottom. */
 		ui->sideDocks->setChecked(false);
 
@@ -209,14 +211,16 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 		/* Transition controls stay accessible via the existing Docks menu. */
 		ui->transitionsDock->setVisible(false);
 
-		const int totalWidth = width();
-		const int dockHeight = height() * 28 / 100;
+		/* Use the client area, with conservative minimums for smaller monitors. */
+		const int totalWidth = qMax(900, centralWidget()->width());
+		const int dockHeight = qBound(170, height() * 28 / 100, 320);
 		QList<QDockWidget *> essentialDocks{ui->scenesDock, ui->sourcesDock, ui->mixerDock, controlsDock};
 		resizeDocks(essentialDocks,
-			    {totalWidth * 23 / 100, totalWidth * 26 / 100, totalWidth * 31 / 100,
-			     totalWidth * 20 / 100},
+			    {qMax(180, totalWidth * 23 / 100), qMax(210, totalWidth * 26 / 100),
+			     qMax(260, totalWidth * 31 / 100), qMax(180, totalWidth * 20 / 100)},
 			    Qt::Horizontal);
 		resizeDocks(essentialDocks, {dockHeight, dockHeight, dockHeight, dockHeight}, Qt::Vertical);
+		hertemusEssentialLayout->setChecked(true);
 	});
 
 	connect(controls, &OBSBasicControls::StreamButtonClicked, this, &OBSBasic::StreamActionTriggered);
@@ -1142,6 +1146,16 @@ void OBSBasic::OBSInit()
 		ui->menuDocks->insertAction(ui->scenesDock->toggleViewAction(), action);
 		connect(action, &QAction::triggered, this, &OBSBasic::ManageExtraBrowserDocks);
 		ui->menuDocks->insertSeparator(ui->scenesDock->toggleViewAction());
+
+		/* HERTEMUS Alerts runs locally and keeps its OAuth/configuration outside
+		 * the OBS profile. The dock is opt-in and only opens the local panel. */
+		QAction *hertemusAlerts = new QAction(QStringLiteral("HERTEMUS | Alertas"), this);
+		ui->menuDocks->insertAction(ui->scenesDock->toggleViewAction(), hertemusAlerts);
+		connect(hertemusAlerts, &QAction::triggered, this, [this]() {
+			AddExtraBrowserDock(QStringLiteral("HERTEMUS | Alertas"),
+					    QStringLiteral("http://127.0.0.1:3000/"),
+					    QStringLiteral("hertemus-alerts"), false);
+		});
 
 		LoadExtraBrowserDocks();
 	}
