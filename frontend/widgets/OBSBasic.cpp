@@ -69,6 +69,7 @@
 #include <QCheckBox>
 #include <QHBoxLayout>
 #include <QTimer>
+#include <QPlainTextEdit>
 
 #include <mutex>
 #include <sstream>
@@ -415,6 +416,51 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			addDockWidget(Qt::RightDockWidgetArea, dock);
 		}
 		dock->setVisible(broadcastCenterAction->isChecked());
+	});
+
+	/* HERTEMUS Unified Chat: a dedicated surface for the connector layer.
+	 * It deliberately reports connector state instead of displaying fake
+	 * messages; platform adapters can feed this model without changing the
+	 * OBS scene/mixer engine. */
+	QAction *unifiedChatAction = ui->menuDocks->addAction(QStringLiteral("HERTEMUS | Chat Unificado"));
+	unifiedChatAction->setCheckable(true);
+	connect(unifiedChatAction, &QAction::triggered, this, [this, unifiedChatAction]() {
+		QDockWidget *dock = findChild<QDockWidget *>(QStringLiteral("hertemusUnifiedChatDock"));
+		if (!dock) {
+			dock = new QDockWidget(QStringLiteral("HERTEMUS | Chat Unificado"), this);
+			dock->setObjectName(QStringLiteral("hertemusUnifiedChatDock"));
+			dock->setMinimumWidth(310);
+			QWidget *panel = new QWidget(dock);
+			QVBoxLayout *layout = new QVBoxLayout(panel);
+			QLabel *title = new QLabel(QStringLiteral("CHAT UNIFICADO"), panel);
+			title->setObjectName(QStringLiteral("unifiedChatTitle"));
+			layout->addWidget(title);
+			QLabel *hint = new QLabel(QStringLiteral("Conectores independentes do motor de transmissão"), panel);
+			hint->setWordWrap(true);
+			layout->addWidget(hint);
+			for (const QString &name : {QStringLiteral("YouTube"), QStringLiteral("Twitch"), QStringLiteral("Kick")}) {
+				QLabel *status = new QLabel(QStringLiteral("●  ") + name + QStringLiteral("   aguardando conexão"), panel);
+				status->setObjectName(QStringLiteral("unifiedChatStatus"));
+				layout->addWidget(status);
+			}
+			QPlainTextEdit *messages = new QPlainTextEdit(panel);
+			messages->setReadOnly(true);
+			messages->setPlaceholderText(QStringLiteral("As mensagens aparecerão aqui quando os conectores forem autenticados."));
+			layout->addWidget(messages, 1);
+			QPushButton *settings = new QPushButton(QStringLiteral("Configurar conectores"), panel);
+			connect(settings, &QPushButton::clicked, this, &OBSBasic::on_action_Settings_triggered);
+			layout->addWidget(settings);
+			panel->setStyleSheet(QStringLiteral(
+				"QWidget { background:#100d1c; color:#e9e1fa; }"
+				"QLabel#unifiedChatTitle { color:#c78cff; font-weight:700; letter-spacing:1px; }"
+				"QLabel#unifiedChatStatus { background:#191329; border:1px solid #332157; border-radius:6px; padding:8px; color:#b9a8d7; }"
+				"QPlainTextEdit { background:#0b0912; border:1px solid #332157; border-radius:6px; color:#e9e1fa; padding:8px; }"
+				"QPushButton { background:#7d32d9; color:white; border:0; border-radius:6px; padding:9px; }"
+				"QPushButton:hover { background:#9749f0; }"));
+			dock->setWidget(panel);
+			addDockWidget(Qt::RightDockWidgetArea, dock);
+		}
+		dock->setVisible(unifiedChatAction->isChecked());
 	});
 
 	/* Set up transitions combobox connections */
@@ -1377,6 +1423,8 @@ void OBSBasic::OBSInit()
 			QTimer::singleShot(250, this, [this]() {
 				for (QAction *action : ui->menuDocks->actions()) {
 					if (action->text() == QStringLiteral("HERTEMUS | Central de Transmissão"))
+						action->trigger();
+					if (action->text() == QStringLiteral("HERTEMUS | Chat Unificado"))
 						action->trigger();
 					if (action->text() == QStringLiteral("HERTEMUS | Alertas"))
 						action->trigger();
