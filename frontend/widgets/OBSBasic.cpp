@@ -230,6 +230,16 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 						dock->setVisible(true);
 						dock->raise();
 					});
+				else if (text.contains(QStringLiteral("Prévia")))
+					connect(button, &QPushButton::clicked, this, [this]() {
+						/* The preview is the central OBS canvas. Hide auxiliary docks
+						 * so this navigation item has a visible, useful result. */
+						ui->scenesDock->setVisible(false);
+						ui->sourcesDock->setVisible(false);
+						ui->mixerDock->setVisible(false);
+						controlsDock->setVisible(false);
+						centralWidget()->setFocus(Qt::OtherFocusReason);
+					});
 				layout->addWidget(button);
 			};
 			addNavigation(QStringLiteral("▣  Prévia"), nullptr);
