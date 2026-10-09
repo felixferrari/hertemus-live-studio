@@ -295,6 +295,26 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			ui->sourcesDock->setVisible(true);
 			ui->mixerDock->setVisible(true);
 			controlsDock->setVisible(true);
+
+			/* Compose the HERTEMUS workspace instead of merely recoloring the
+			 * stock OBS arrangement: preview remains central, production tools
+			 * occupy the lower rail, and the broadcast surface stays on the right. */
+			ui->scenesDock->setFloating(false);
+			ui->sourcesDock->setFloating(false);
+			ui->mixerDock->setFloating(false);
+			controlsDock->setFloating(false);
+			addDockWidget(Qt::BottomDockWidgetArea, ui->scenesDock);
+			splitDockWidget(ui->scenesDock, ui->sourcesDock, Qt::Horizontal);
+			splitDockWidget(ui->sourcesDock, ui->mixerDock, Qt::Horizontal);
+			splitDockWidget(ui->mixerDock, controlsDock, Qt::Horizontal);
+			const int railWidth = qMax(900, width());
+			const int railHeight = qBound(190, height() * 30 / 100, 360);
+			resizeDocks({ui->scenesDock, ui->sourcesDock, ui->mixerDock, controlsDock},
+				    {railWidth * 22 / 100, railWidth * 24 / 100, railWidth * 32 / 100,
+				     railWidth * 22 / 100},
+				    Qt::Horizontal);
+			resizeDocks({ui->scenesDock, ui->sourcesDock, ui->mixerDock, controlsDock},
+				    {railHeight, railHeight, railHeight, railHeight}, Qt::Vertical);
 		}
 	});
 	QAction *hertemusEssentialLayout = ui->menuDocks->addAction(QStringLiteral("HERTEMUS | Estudio Essencial"));
@@ -1352,6 +1372,16 @@ void OBSBasic::OBSInit()
 					break;
 				}
 			}
+			/* The portable profile should present the production workspace on
+			 * first launch, including the two HERTEMUS companion panels. */
+			QTimer::singleShot(250, this, [this]() {
+				for (QAction *action : ui->menuDocks->actions()) {
+					if (action->text() == QStringLiteral("HERTEMUS | Central de Transmissão"))
+						action->trigger();
+					if (action->text() == QStringLiteral("HERTEMUS | Alertas"))
+						action->trigger();
+				}
+			});
 		});
 	}
 
