@@ -1388,13 +1388,22 @@ void OBSBasic::OBSInit()
 		connect(hertemusAlerts, &QAction::triggered, this, [this]() {
 			const QString alertsDir = QCoreApplication::applicationDirPath() + QStringLiteral("/hertemus-alerts");
 			const QString launcher = alertsDir + QStringLiteral("/INICIAR HERTEMUS ALERTS.bat");
-			if (QFileInfo::exists(alertsDir + QStringLiteral("/server.js")) && QFileInfo::exists(launcher))
-				QProcess::startDetached(QStringLiteral("cmd.exe"), {QStringLiteral("/c"), launcher}, alertsDir);
+			const QString server = alertsDir + QStringLiteral("/server.js");
+			const QString bundledNode = alertsDir + QStringLiteral("/node.exe");
+			if (QFileInfo::exists(server)) {
+				/* Prefer the bundled runtime. Starting cmd.exe with a path containing
+				 * spaces is timing- and quoting-sensitive and was the reason the first
+				 * Alerts dock often showed connection refused. */
+				if (QFileInfo::exists(bundledNode))
+					QProcess::startDetached(bundledNode, {server}, alertsDir);
+				else if (QFileInfo::exists(launcher))
+					QProcess::startDetached(QStringLiteral("cmd.exe"), {QStringLiteral("/d"), QStringLiteral("/s"), QStringLiteral("/c"), launcher}, alertsDir);
+			}
 
 			/* Give the bundled Node process time to bind localhost before the
 			 * browser dock is created. This avoids the misleading connection
 			 * refused page seen on first launch. */
-			QTimer::singleShot(1500, this, [this]() {
+			QTimer::singleShot(2200, this, [this]() {
 				AddExtraBrowserDock(QStringLiteral("HERTEMUS | Alertas"),
 						    QStringLiteral("http://127.0.0.1:3000/"),
 						    QStringLiteral("hertemus-alerts"), false);
