@@ -58,6 +58,7 @@
 #include <qt-wrappers.hpp>
 
 #include <QActionGroup>
+#include <QMenu>
 #include <QThread>
 #include <QProcess>
 #include <QFileInfo>
@@ -257,8 +258,27 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 						centralWidget()->setFocus(Qt::OtherFocusReason);
 					});
 				else
-					connect(button, &QPushButton::clicked, this, [this, text]() {
-						if (text.contains(QStringLiteral("Configurações")) || text.contains(QStringLiteral("Temas"))) {
+					connect(button, &QPushButton::clicked, this, [this, button, text]() {
+						if (text.contains(QStringLiteral("Temas"))) {
+							QMenu menu(button);
+							menu.setStyleSheet(QStringLiteral("QMenu { background:#100b1c; color:#f5edff; border:1px solid #6f2dbd; padding:6px; } QMenu::item { padding:9px 28px 9px 12px; border-radius:5px; } QMenu::item:selected { background:#7b2fd0; }"));
+							const QList<QPair<QString, QString>> themes = {
+								{QStringLiteral("Roxo (principal)"), QStringLiteral("br.com.hertemus.Yami.Roxo")},
+								{QStringLiteral("Esmeralda"), QStringLiteral("br.com.hertemus.Yami.Esmeralda")},
+								{QStringLiteral("Azul"), QStringLiteral("br.com.hertemus.Yami.Azul")}};
+							for (const auto &theme : themes) {
+								QAction *action = menu.addAction(theme.first);
+								connect(action, &QAction::triggered, this, [this, theme]() {
+									if (App()->SetTheme(theme.second))
+										statusBar()->showMessage(QStringLiteral("Tema HERTEMUS aplicado: %1").arg(theme.first), 4000);
+									else
+										statusBar()->showMessage(QStringLiteral("Tema não encontrado: %1").arg(theme.first), 5000);
+								});
+							}
+							menu.exec(button->mapToGlobal(QPoint(button->width(), 0)));
+							return;
+						}
+						if (text.contains(QStringLiteral("Configurações"))) {
 							on_action_Settings_triggered();
 							return;
 						}
