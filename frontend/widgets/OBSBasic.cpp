@@ -408,26 +408,49 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			QVBoxLayout *platformLayout = new QVBoxLayout(platforms);
 			platformLayout->setContentsMargins(10, 8, 10, 8);
 			platformLayout->setSpacing(6);
+			QList<QCheckBox *> platformChecks;
 			for (const QString &name : {QStringLiteral("YouTube"), QStringLiteral("Twitch"), QStringLiteral("Restream")}) {
 				QHBoxLayout *row = new QHBoxLayout;
 				QCheckBox *platform = new QCheckBox(name, platforms);
 				platform->setObjectName(QStringLiteral("broadcastPlatformCheck"));
-				QLabel *status = new QLabel(QStringLiteral("OBS configurado"), platforms);
+				platformChecks.append(platform);
+				QLabel *status = new QLabel(QStringLiteral("Não selecionado"), platforms);
 				status->setObjectName(QStringLiteral("broadcastPlatformStatus"));
 				status->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+				connect(platform, &QCheckBox::toggled, this, [status](bool checked) {
+					status->setText(checked ? QStringLiteral("Preparado") : QStringLiteral("Não selecionado"));
+					status->setStyleSheet(checked ? QStringLiteral("color:#56e39f; font-size:10px;")
+								    : QStringLiteral("color:#8d819f; font-size:10px;"));
+				});
 				row->addWidget(platform);
 				row->addStretch(1);
 				row->addWidget(status);
 				platformLayout->addLayout(row);
 			}
 			layout->addWidget(platforms);
+			QLabel *selectionSummary = new QLabel(QStringLiteral("Nenhum destino selecionado"), panel);
+			selectionSummary->setObjectName(QStringLiteral("broadcastSelectionSummary"));
+			layout->addWidget(selectionSummary);
 			QLabel *mode = new QLabel(QStringLiteral("MODO DE PRODUÇÃO\nA transmissão inicia pelo motor do OBS. Os conectores selecionados ficam preparados para a próxima camada de saída multiplataforma."), panel);
 			mode->setObjectName(QStringLiteral("broadcastMode"));
 			mode->setWordWrap(true);
 			layout->addWidget(mode);
 			QPushButton *start = new QPushButton(QStringLiteral("Iniciar transmissão"), panel);
 			start->setObjectName(QStringLiteral("broadcastStart"));
-			connect(start, &QPushButton::clicked, this, &OBSBasic::StreamActionTriggered);
+			connect(start, &QPushButton::clicked, this, [this, platformChecks, selectionSummary]() {
+				QStringList selected;
+				for (QCheckBox *platform : platformChecks) {
+					if (platform->isChecked()) selected.append(platform->text());
+				}
+				if (selected.isEmpty()) {
+					selectionSummary->setText(QStringLiteral("Selecione pelo menos um destino antes de iniciar"));
+					selectionSummary->setStyleSheet(QStringLiteral("color:#ffb86b; font-size:11px;"));
+					return;
+				}
+				selectionSummary->setText(QStringLiteral("Destinos preparados: ") + selected.join(QStringLiteral(" • ")));
+				selectionSummary->setStyleSheet(QStringLiteral("color:#56e39f; font-size:11px;"));
+				StreamActionTriggered();
+			});
 			layout->addWidget(start);
 			QPushButton *settings = new QPushButton(QStringLiteral("Abrir configurações de transmissão"), panel);
 			connect(settings, &QPushButton::clicked, this, &OBSBasic::on_action_Settings_triggered);
@@ -439,6 +462,7 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 				"QFrame#broadcastPlatforms { background:#171126; border:1px solid #332157; border-radius:8px; }"
 				"QCheckBox#broadcastPlatformCheck { color:#f0eaff; spacing:8px; padding:4px; }"
 				"QLabel#broadcastPlatformStatus { color:#56e39f; font-size:10px; }"
+				"QLabel#broadcastSelectionSummary { color:#9f91b9; padding:3px 0; font-size:11px; }"
 				"QLabel#broadcastMode { color:#9f91b9; background:#130f20; border-left:3px solid #8d42e8; padding:9px; font-size:11px; }"
 				"QPushButton#broadcastStart { background:#7d32d9; color:white; border:0; padding:11px; border-radius:6px; font-weight:700; }"
 				"QPushButton#broadcastStart:hover { background:#9749f0; }"));
