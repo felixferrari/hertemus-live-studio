@@ -72,6 +72,7 @@
 #include <QHBoxLayout>
 #include <QTimer>
 #include <QPlainTextEdit>
+#include <QTcpSocket>
 
 #include <mutex>
 #include <sstream>
@@ -1438,14 +1439,36 @@ void OBSBasic::OBSInit()
 					QProcess::startDetached(QStringLiteral("cmd.exe"), {QStringLiteral("/d"), QStringLiteral("/s"), QStringLiteral("/c"), launcher}, alertsDir);
 			}
 
-			/* Give the bundled Node process time to bind localhost before the
-			 * browser dock is created. This avoids the misleading connection
-			 * refused page seen on first launch. */
-			QTimer::singleShot(2200, this, [this]() {
-				AddExtraBrowserDock(QStringLiteral("HERTEMUS | Alertas"),
-						    QStringLiteral("http://127.0.0.1:3000/"),
-						    QStringLiteral("hertemus-alerts"), false);
+			/* Wait for the local server instead of guessing a startup delay. The
+			 * old fixed timer could create a browser dock while Node was still
+			 * loading, leaving a permanent "connection refused" page. */
+			QTimer *probeTimer = new QTimer(this);
+			int *attempts = new int(0);
+			connect(probeTimer, &QTimer::timeout, this, [this, probeTimer, attempts]() {
+				++(*attempts);
+				QTcpSocket *probe = new QTcpSocket(this);
+				connect(probe, &QTcpSocket::connected, this, [this, probeTimer, attempts, probe]() {
+					probeTimer->stop();
+					probeTimer->deleteLater();
+					delete attempts;
+					probe->deleteLater();
+					AddExtraBrowserDock(QStringLiteral("HERTEMUS | Alertas"),
+							    QStringLiteral("http://127.0.0.1:3000/"),
+							    QStringLiteral("hertemus-alerts"), false);
+				});
+				connect(probe, &QTcpSocket::errorOccurred, probe, &QTcpSocket::deleteLater);
+				probe->connectToHost(QHostAddress::LocalHost, 3000);
+				if (*attempts >= 30) {
+					probeTimer->stop();
+					probeTimer->deleteLater();
+					delete attempts;
+					probe->deleteLater();
+					AddExtraBrowserDock(QStringLiteral("HERTEMUS | Alertas"),
+							    QStringLiteral("http://127.0.0.1:3000/"),
+							    QStringLiteral("hertemus-alerts"), false);
+				}
 			});
+			probeTimer->start(350);
 		});
 
 		LoadExtraBrowserDocks();
