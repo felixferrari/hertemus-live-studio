@@ -1036,6 +1036,24 @@ const server = http.createServer(async (req, res) => {
       const emoteSince = Number(u.searchParams.get('emoteSince') || 0);
       return json(res,200,{events:state.events.filter(e=>e.id>since),emotes:state.emotes.filter(e=>e.id>emoteSince),latest:state.seq,emoteLatest:state.emoteSeq,...overlaySettingsPayload()});
     }
+    if (req.method === 'GET' && p === '/api/chat') {
+      const since = Number(u.searchParams.get('since') || 0);
+      const events = state.events.filter(e => e.id > since && e.type === 'chat');
+      return json(res,200,{ok:true,events,latest:state.seq,connectors:{twitch:twitchStatus(),youtube:{connected:!!config.refreshToken}}});
+    }
+    if (req.method === 'POST' && p === '/api/chat/send') {
+      const raw = await readBody(req); let body={};
+      try { body=JSON.parse(raw||'{}'); } catch { return json(res,400,{ok:false,error:'JSON inválido'}); }
+      const message = String(body.message || '').trim().replace(/[\r\n]+/g,' ').slice(0,500);
+      const target = String(body.target || 'twitch').toLowerCase();
+      if (!message) return json(res,400,{ok:false,error:'Mensagem vazia.'});
+      if (target !== 'twitch') return json(res,409,{ok:false,error:'Este conector ainda não permite envio pelo barramento HERTEMUS.',target});
+      if (!twitch.socket || !twitch.connected) return json(res,409,{ok:false,error:'Twitch não está conectado.',connector:twitchStatus()});
+      const channel = String(config.twitchChannel).replace(/^#/,'').trim().toLowerCase();
+      twitch.socket.write(`PRIVMSG #${channel} :${message}\r\n`);
+      const event = addEvent('chat',{name:config.twitchUsername || 'HERTEMUS',message,source:'hertemus'});
+      return json(res,200,{ok:true,target,event});
+    }
     if (req.method === 'GET' && p === '/api/history') {
       return json(res,200,{ok:true,events:readHistory(Number(u.searchParams.get('limit')||100))});
     }

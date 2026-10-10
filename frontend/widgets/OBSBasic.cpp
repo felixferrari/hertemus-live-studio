@@ -73,8 +73,16 @@
 #include <QTimer>
 #include <QPlainTextEdit>
 #include <QTcpSocket>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QUrlQuery>
 
 #include <mutex>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -510,12 +518,51 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			composer->addWidget(message, 1);
 			composer->addWidget(send);
 			layout->addLayout(composer);
-			connect(send, &QPushButton::clicked, this, [messages, message]() {
-				if (!message->text().trimmed().isEmpty()) {
-					messages->appendPlainText(QStringLiteral("[HERTEMUS] ") + message->text().trimmed());
-					message->clear();
-				}
+			QNetworkAccessManager *chatNetwork = new QNetworkAccessManager(dock);
+			auto chatSince = std::make_shared<qint64>(0);
+			connect(send, &QPushButton::clicked, this, [messages, message, chatNetwork]() {
+				const QString text = message->text().trimmed();
+				if (text.isEmpty()) return;
+				QNetworkRequest request(QUrl(QStringLiteral("http://127.0.0.1:3000/api/chat/send")));
+				request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+				const QJsonObject body{{QStringLiteral("message"), text}, {QStringLiteral("target"), QStringLiteral("twitch")}};
+				QNetworkReply *reply = chatNetwork->post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
+				QObject::connect(reply, &QNetworkReply::finished, reply, [reply, messages, message]() {
+					const QByteArray payload = reply->readAll();
+					const QJsonObject result = QJsonDocument::fromJson(payload).object();
+					if (reply->error() == QNetworkReply::NoError && result.value(QStringLiteral("ok")).toBool()) {
+						message->clear();
+					} else {
+						const QString error = result.value(QStringLiteral("error")).toString(QStringLiteral("Falha no envio"));
+						messages->appendPlainText(QStringLiteral("[HERTEMUS] ") + error);
+					}
+					reply->deleteLater();
+				});
 			});
+			QTimer *chatPoll = new QTimer(dock);
+			chatPoll->setInterval(1500);
+			connect(chatPoll, &QTimer::timeout, this, [chatNetwork, messages, chatSince]() {
+				QUrl url(QStringLiteral("http://127.0.0.1:3000/api/chat"));
+				QUrlQuery query;
+				query.addQueryItem(QStringLiteral("since"), QString::number(*chatSince));
+				url.setQuery(query);
+				QNetworkReply *reply = chatNetwork->get(QNetworkRequest(url));
+				QObject::connect(reply, &QNetworkReply::finished, reply, [reply, messages, chatSince]() {
+					if (reply->error() == QNetworkReply::NoError) {
+						const QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
+						for (const QJsonValue &value : root.value(QStringLiteral("events")).toArray()) {
+							const QJsonObject event = value.toObject();
+							*chatSince = qMax(*chatSince, static_cast<qint64>(event.value(QStringLiteral("id")).toDouble()));
+							const QString source = event.value(QStringLiteral("source")).toString(QStringLiteral("chat"));
+							const QString name = event.value(QStringLiteral("name")).toString(QStringLiteral("Usuário"));
+							const QString text = event.value(QStringLiteral("message")).toString();
+							if (!text.isEmpty()) messages->appendPlainText(QStringLiteral("[%1] %2: %3").arg(source, name, text));
+						}
+					}
+					reply->deleteLater();
+				});
+			});
+			chatPoll->start();
 			QPushButton *settings = new QPushButton(QStringLiteral("Configurar conectores"), panel);
 			connect(settings, &QPushButton::clicked, this, &OBSBasic::on_action_Settings_triggered);
 			layout->addWidget(settings);
