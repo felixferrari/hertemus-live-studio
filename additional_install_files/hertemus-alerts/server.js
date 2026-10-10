@@ -672,6 +672,10 @@ function mapChatEvent(item) {
     source:'youtube-live'
   };
   switch(type) {
+    case 'textMessageEvent': {
+      const d=s.textMessageDetails||{};
+      return ['chat', { ...base, message:d.messageText || s.displayMessage || '' }];
+    }
     case 'newSponsorEvent': {
       const d=s.newSponsorDetails||{};
       if (d.isUpgrade) return ['upgrade', { ...base, detail:d.memberLevelName || '', level:d.memberLevelName || '' }];

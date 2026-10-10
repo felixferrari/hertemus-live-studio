@@ -450,6 +450,15 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			QPushButton *settings = new QPushButton(QStringLiteral("Configurar conectores"), panel);
 			connect(settings, &QPushButton::clicked, this, &OBSBasic::on_action_Settings_triggered);
 			layout->addWidget(settings);
+#ifdef BROWSER_AVAILABLE
+			QPushButton *liveChat = new QPushButton(QStringLiteral("Abrir mensagens ao vivo"), panel);
+			connect(liveChat, &QPushButton::clicked, this, [this]() {
+				AddExtraBrowserDock(QStringLiteral("HERTEMUS | Chat ao Vivo"),
+						    QStringLiteral("http://127.0.0.1:3000/chat.html"),
+						    QStringLiteral("hertemus-live-chat"), false);
+			});
+			layout->addWidget(liveChat);
+#endif
 			panel->setStyleSheet(QStringLiteral(
 				"QWidget { background:#100d1c; color:#e9e1fa; }"
 				"QLabel#unifiedChatTitle { color:#c78cff; font-weight:700; letter-spacing:1px; }"
