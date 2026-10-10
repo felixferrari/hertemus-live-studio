@@ -256,6 +256,24 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 						controlsDock->setVisible(false);
 						centralWidget()->setFocus(Qt::OtherFocusReason);
 					});
+				else
+					connect(button, &QPushButton::clicked, this, [this, text]() {
+						if (text.contains(QStringLiteral("Configurações")) || text.contains(QStringLiteral("Temas"))) {
+							on_action_Settings_triggered();
+							return;
+						}
+						const QString actionText = text.contains(QStringLiteral("Alertas"))
+							? QStringLiteral("HERTEMUS | Alertas")
+							: (text.contains(QStringLiteral("Chat")) ? QStringLiteral("HERTEMUS | Chat Unificado")
+															: QStringLiteral("HERTEMUS | Central de Transmissão"));
+						for (QAction *action : ui->menuDocks->actions()) {
+							if (action->text() == actionText) {
+								action->setChecked(true);
+								action->trigger();
+								break;
+							}
+						}
+					});
 				layout->addWidget(button);
 			};
 			addNavigation(QStringLiteral("▣  Prévia"), nullptr);
@@ -263,6 +281,11 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			addNavigation(QStringLiteral("◈  Fontes"), ui->sourcesDock);
 			addNavigation(QStringLiteral("≋  Mixer"), ui->mixerDock);
 			addNavigation(QStringLiteral("●  Controles"), controlsDock);
+			addNavigation(QStringLiteral("◌  Chat"), nullptr);
+			addNavigation(QStringLiteral("♢  Alertas"), nullptr);
+			addNavigation(QStringLiteral("◫  Multistream"), nullptr);
+			addNavigation(QStringLiteral("◉  Temas"), nullptr);
+			addNavigation(QStringLiteral("⚙  Configurações"), nullptr);
 			if (!navigationButtons.isEmpty())
 				navigationButtons.first()->setChecked(true);
 			layout->addStretch(1);
