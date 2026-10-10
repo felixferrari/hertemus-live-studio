@@ -214,6 +214,7 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			QVBoxLayout *layout = new QVBoxLayout(content);
 			layout->setContentsMargins(14, 18, 14, 14);
 			layout->setSpacing(7);
+			QList<QPushButton *> navigationButtons;
 
 			QLabel *brand = new QLabel(QStringLiteral("◢  HERTEMUS\n    LIVE STUDIO"), content);
 			brand->setObjectName(QStringLiteral("hertemusBrand"));
@@ -222,10 +223,12 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			section->setObjectName(QStringLiteral("hertemusSection"));
 			layout->addWidget(section);
 
-			auto addNavigation = [this, layout, content](const QString &text, QDockWidget *dock) {
+			auto addNavigation = [this, layout, content, &navigationButtons](const QString &text, QDockWidget *dock) {
 				QPushButton *button = new QPushButton(text, content);
 				button->setObjectName(QStringLiteral("hertemusNavButton"));
-				button->setCheckable(false);
+				button->setCheckable(true);
+				button->setAutoExclusive(true);
+				navigationButtons.append(button);
 				if (dock)
 					connect(button, &QPushButton::clicked, this, [dock]() {
 						dock->setVisible(true);
@@ -248,6 +251,8 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			addNavigation(QStringLiteral("◈  Fontes"), ui->sourcesDock);
 			addNavigation(QStringLiteral("≋  Mixer"), ui->mixerDock);
 			addNavigation(QStringLiteral("●  Controles"), controlsDock);
+			if (!navigationButtons.isEmpty())
+				navigationButtons.first()->setChecked(true);
 			layout->addStretch(1);
 			QLabel *status = new QLabel(QStringLiteral("HERTEMUS\nCREATE • STREAM • BELONG"), content);
 			status->setObjectName(QStringLiteral("hertemusStatus"));
@@ -257,8 +262,9 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 				"QWidget#hertemusNavigation { background:#0d0b18; border-right:1px solid #332157; }"
 				"QLabel#hertemusBrand { color:#f4efff; font-size:17px; font-weight:700; padding:10px 4px 22px; }"
 				"QLabel#hertemusSection { color:#9c86c8; font-size:10px; font-weight:700; padding:4px; }"
-				"QPushButton#hertemusNavButton { color:#d9d0ee; background:transparent; border:0; border-radius:7px; text-align:left; padding:11px 10px; font-size:12px; }"
-				"QPushButton#hertemusNavButton:hover { background:#211439; color:#ffffff; }"
+				"QPushButton#hertemusNavButton { color:#d9d0ee; background:transparent; border:1px solid transparent; border-radius:7px; text-align:left; padding:11px 10px; font-size:12px; }"
+				"QPushButton#hertemusNavButton:hover { background:#211439; color:#ffffff; border-color:#42266d; }"
+				"QPushButton#hertemusNavButton:checked { background:#7131c7; color:#ffffff; border-color:#b96cff; font-weight:700; }"
 				"QLabel#hertemusStatus { color:#816baf; font-size:10px; letter-spacing:2px; padding:8px 4px; }"));
 			sidebar->setWidget(content);
 			addDockWidget(Qt::LeftDockWidgetArea, sidebar);
