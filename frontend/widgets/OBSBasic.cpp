@@ -63,7 +63,9 @@
 #include <QFileInfo>
 #include <QWidgetAction>
 #include <QDockWidget>
+#include <QFrame>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QCheckBox>
@@ -400,11 +402,28 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			QLabel *hint = new QLabel(QStringLiteral("Selecione os conectores configurados no OBS."), panel);
 			hint->setWordWrap(true);
 			layout->addWidget(hint);
+			QFrame *platforms = new QFrame(panel);
+			platforms->setObjectName(QStringLiteral("broadcastPlatforms"));
+			QVBoxLayout *platformLayout = new QVBoxLayout(platforms);
+			platformLayout->setContentsMargins(10, 8, 10, 8);
+			platformLayout->setSpacing(6);
 			for (const QString &name : {QStringLiteral("YouTube"), QStringLiteral("Twitch"), QStringLiteral("Restream")}) {
-				QCheckBox *platform = new QCheckBox(name + QStringLiteral("  •  configuração do OBS"), panel);
-				platform->setEnabled(true);
-				layout->addWidget(platform);
+				QHBoxLayout *row = new QHBoxLayout;
+				QCheckBox *platform = new QCheckBox(name, platforms);
+				platform->setObjectName(QStringLiteral("broadcastPlatformCheck"));
+				QLabel *status = new QLabel(QStringLiteral("OBS configurado"), platforms);
+				status->setObjectName(QStringLiteral("broadcastPlatformStatus"));
+				status->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+				row->addWidget(platform);
+				row->addStretch(1);
+				row->addWidget(status);
+				platformLayout->addLayout(row);
 			}
+			layout->addWidget(platforms);
+			QLabel *mode = new QLabel(QStringLiteral("MODO DE PRODUÇÃO\nA transmissão inicia pelo motor do OBS. Os conectores selecionados ficam preparados para a próxima camada de saída multiplataforma."), panel);
+			mode->setObjectName(QStringLiteral("broadcastMode"));
+			mode->setWordWrap(true);
+			layout->addWidget(mode);
 			QPushButton *start = new QPushButton(QStringLiteral("Iniciar transmissão"), panel);
 			start->setObjectName(QStringLiteral("broadcastStart"));
 			connect(start, &QPushButton::clicked, this, &OBSBasic::StreamActionTriggered);
@@ -415,8 +434,12 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			layout->addStretch(1);
 			panel->setStyleSheet(QStringLiteral(
 				"QWidget { background:#100d1c; color:#e9e1fa; }"
-				"QLabel#broadcastTitle { color:#c78cff; font-weight:700; letter-spacing:1px; }"
-				"QPushButton#broadcastStart { background:#7d32d9; color:white; border:0; padding:10px; border-radius:6px; }"
+				"QLabel#broadcastTitle { color:#c78cff; font-weight:700; letter-spacing:1px; font-size:15px; }"
+				"QFrame#broadcastPlatforms { background:#171126; border:1px solid #332157; border-radius:8px; }"
+				"QCheckBox#broadcastPlatformCheck { color:#f0eaff; spacing:8px; padding:4px; }"
+				"QLabel#broadcastPlatformStatus { color:#56e39f; font-size:10px; }"
+				"QLabel#broadcastMode { color:#9f91b9; background:#130f20; border-left:3px solid #8d42e8; padding:9px; font-size:11px; }"
+				"QPushButton#broadcastStart { background:#7d32d9; color:white; border:0; padding:11px; border-radius:6px; font-weight:700; }"
 				"QPushButton#broadcastStart:hover { background:#9749f0; }"));
 			dock->setWidget(panel);
 			addDockWidget(Qt::RightDockWidgetArea, dock);
@@ -444,15 +467,30 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			QLabel *hint = new QLabel(QStringLiteral("Conectores independentes do motor de transmissão"), panel);
 			hint->setWordWrap(true);
 			layout->addWidget(hint);
+			QHBoxLayout *providers = new QHBoxLayout;
 			for (const QString &name : {QStringLiteral("YouTube"), QStringLiteral("Twitch"), QStringLiteral("Kick")}) {
-				QLabel *status = new QLabel(QStringLiteral("●  ") + name + QStringLiteral("   aguardando conexão"), panel);
-				status->setObjectName(QStringLiteral("unifiedChatStatus"));
-				layout->addWidget(status);
+				QLabel *status = new QLabel(QStringLiteral("●  ") + name, panel);
+				status->setObjectName(QStringLiteral("unifiedChatProvider"));
+				providers->addWidget(status);
 			}
+			layout->addLayout(providers);
 			QPlainTextEdit *messages = new QPlainTextEdit(panel);
 			messages->setReadOnly(true);
 			messages->setPlaceholderText(QStringLiteral("As mensagens aparecerão aqui quando os conectores forem autenticados."));
 			layout->addWidget(messages, 1);
+			QHBoxLayout *composer = new QHBoxLayout;
+			QLineEdit *message = new QLineEdit(panel);
+			message->setPlaceholderText(QStringLiteral("Mensagem para os conectores ativos..."));
+			QPushButton *send = new QPushButton(QStringLiteral("Enviar"), panel);
+			composer->addWidget(message, 1);
+			composer->addWidget(send);
+			layout->addLayout(composer);
+			connect(send, &QPushButton::clicked, this, [messages, message]() {
+				if (!message->text().trimmed().isEmpty()) {
+					messages->appendPlainText(QStringLiteral("[HERTEMUS] ") + message->text().trimmed());
+					message->clear();
+				}
+			});
 			QPushButton *settings = new QPushButton(QStringLiteral("Configurar conectores"), panel);
 			connect(settings, &QPushButton::clicked, this, &OBSBasic::on_action_Settings_triggered);
 			layout->addWidget(settings);
@@ -468,7 +506,7 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			panel->setStyleSheet(QStringLiteral(
 				"QWidget { background:#100d1c; color:#e9e1fa; }"
 				"QLabel#unifiedChatTitle { color:#c78cff; font-weight:700; letter-spacing:1px; }"
-				"QLabel#unifiedChatStatus { background:#191329; border:1px solid #332157; border-radius:6px; padding:8px; color:#b9a8d7; }"
+				"QLabel#unifiedChatProvider { background:#191329; border:1px solid #332157; border-radius:6px; padding:7px; color:#56e39f; font-size:10px; }"
 				"QPlainTextEdit { background:#0b0912; border:1px solid #332157; border-radius:6px; color:#e9e1fa; padding:8px; }"
 				"QPushButton { background:#7d32d9; color:white; border:0; border-radius:6px; padding:9px; }"
 				"QPushButton:hover { background:#9749f0; }"));
