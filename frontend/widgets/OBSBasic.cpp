@@ -67,6 +67,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QComboBox>
 #include <QVBoxLayout>
 #include <QCheckBox>
 #include <QHBoxLayout>
@@ -306,8 +307,51 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			header->setWidget(bar);
 			addDockWidget(Qt::TopDockWidgetArea, header);
 		}
+		QDockWidget *previewBar = findChild<QDockWidget *>(QStringLiteral("hertemusPreviewBarDock"));
+		if (!previewBar) {
+			previewBar = new QDockWidget(QStringLiteral("HERTEMUS | Live Preview"), this);
+			previewBar->setObjectName(QStringLiteral("hertemusPreviewBarDock"));
+			previewBar->setFeatures(QDockWidget::NoDockWidgetFeatures);
+			previewBar->setAllowedAreas(Qt::TopDockWidgetArea);
+			QWidget *previewToolbar = new QWidget(previewBar);
+			QHBoxLayout *previewLayout = new QHBoxLayout(previewToolbar);
+			previewLayout->setContentsMargins(16, 5, 16, 5);
+			previewLayout->setSpacing(8);
+			QLabel *previewTitle = new QLabel(QStringLiteral("▣  Live Preview"), previewToolbar);
+			previewTitle->setObjectName(QStringLiteral("hertemusPreviewTitle"));
+			QLabel *liveBadge = new QLabel(QStringLiteral("● LIVE"), previewToolbar);
+			liveBadge->setObjectName(QStringLiteral("hertemusLiveBadge"));
+			QLabel *session = new QLabel(QStringLiteral("00:00:00   •   0 viewers"), previewToolbar);
+			session->setObjectName(QStringLiteral("hertemusPreviewMeta"));
+			QComboBox *quality = new QComboBox(previewToolbar);
+			quality->addItems({QStringLiteral("1080p60"), QStringLiteral("1080p30"), QStringLiteral("720p60")});
+			quality->setObjectName(QStringLiteral("hertemusPreviewCombo"));
+			QComboBox *fit = new QComboBox(previewToolbar);
+			fit->addItems({QStringLiteral("Fit to Screen"), QStringLiteral("100%"), QStringLiteral("50%")});
+			fit->setObjectName(QStringLiteral("hertemusPreviewCombo"));
+			QPushButton *studio = new QPushButton(QStringLiteral("Studio Mode"), previewToolbar);
+			studio->setObjectName(QStringLiteral("hertemusPreviewAction"));
+			connect(studio, &QPushButton::clicked, this, &OBSBasic::TogglePreviewProgramMode);
+			previewLayout->addWidget(previewTitle);
+			previewLayout->addWidget(liveBadge);
+			previewLayout->addWidget(session);
+			previewLayout->addStretch(1);
+			previewLayout->addWidget(quality);
+			previewLayout->addWidget(fit);
+			previewLayout->addWidget(studio);
+			previewToolbar->setStyleSheet(QStringLiteral(
+				"QWidget { background:#151022; border-bottom:1px solid #332157; }"
+				"QLabel#hertemusPreviewTitle { color:#f1eaff; font-size:13px; font-weight:700; }"
+				"QLabel#hertemusLiveBadge { background:#b72845; color:white; border-radius:5px; padding:4px 7px; font-size:10px; font-weight:700; }"
+				"QLabel#hertemusPreviewMeta { color:#a99bbd; font-size:10px; }"
+				"QComboBox#hertemusPreviewCombo, QPushButton#hertemusPreviewAction { background:#211936; color:#e9e1fa; border:1px solid #43296a; border-radius:5px; padding:5px 9px; font-size:10px; }"
+				"QPushButton#hertemusPreviewAction:hover { background:#7131c7; color:white; }"));
+			previewBar->setWidget(previewToolbar);
+			addDockWidget(Qt::TopDockWidgetArea, previewBar);
+		}
 		sidebar->setVisible(hertemusStudioLayout->isChecked());
 		header->setVisible(hertemusStudioLayout->isChecked());
+		previewBar->setVisible(hertemusStudioLayout->isChecked());
 		if (hertemusStudioLayout->isChecked()) {
 			ui->scenesDock->setVisible(true);
 			ui->sourcesDock->setVisible(true);
@@ -333,6 +377,17 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 				    Qt::Horizontal);
 			resizeDocks({ui->scenesDock, ui->sourcesDock, ui->mixerDock, controlsDock},
 				    {railHeight, railHeight, railHeight, railHeight}, Qt::Vertical);
+			QDockWidget *broadcastDock = findChild<QDockWidget *>(QStringLiteral("hertemusBroadcastCenterDock"));
+			QDockWidget *chatDock = findChild<QDockWidget *>(QStringLiteral("hertemusUnifiedChatDock"));
+			if (broadcastDock) {
+				addDockWidget(Qt::RightDockWidgetArea, broadcastDock);
+				broadcastDock->setMinimumWidth(300);
+			}
+			if (chatDock) {
+				addDockWidget(Qt::RightDockWidgetArea, chatDock);
+				chatDock->setMinimumWidth(310);
+				if (broadcastDock) splitDockWidget(chatDock, broadcastDock, Qt::Vertical);
+			}
 		}
 	});
 	QAction *hertemusEssentialLayout = ui->menuDocks->addAction(QStringLiteral("HERTEMUS | Estudio Essencial"));
@@ -478,6 +533,8 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			addDockWidget(Qt::RightDockWidgetArea, dock);
 		}
 		dock->setVisible(broadcastCenterAction->isChecked());
+		if (broadcastCenterAction->isChecked() && findChild<QDockWidget *>(QStringLiteral("hertemusNavigationDock")))
+			addDockWidget(Qt::RightDockWidgetArea, dock);
 	});
 
 	/* HERTEMUS Unified Chat: a dedicated surface for the connector layer.
@@ -586,6 +643,11 @@ OBSBasic::OBSBasic(QWidget *parent) : OBSMainWindow(parent), undo_s(ui), ui(new 
 			addDockWidget(Qt::RightDockWidgetArea, dock);
 		}
 		dock->setVisible(unifiedChatAction->isChecked());
+		if (unifiedChatAction->isChecked() && findChild<QDockWidget *>(QStringLiteral("hertemusNavigationDock"))) {
+			addDockWidget(Qt::RightDockWidgetArea, dock);
+			if (QDockWidget *broadcastDock = findChild<QDockWidget *>(QStringLiteral("hertemusBroadcastCenterDock")))
+				splitDockWidget(dock, broadcastDock, Qt::Vertical);
+		}
 	});
 
 	/* Set up transitions combobox connections */
