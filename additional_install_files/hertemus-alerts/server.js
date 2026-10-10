@@ -4,6 +4,7 @@ const path = require('path');
 const { URL } = require('url');
 const crypto = require('crypto');
 const { exec } = require('child_process');
+const net = require('net');
 
 const ROOT = __dirname;
 const WEB = path.join(ROOT, 'web');
@@ -49,6 +50,10 @@ const defaultConfig = {
   liveUrl: '',
   clientId: '',
   clientSecret: '',
+  twitchEnabled: false,
+  twitchUsername: '',
+  twitchToken: '',
+  twitchChannel: '',
   refreshToken: '',
   accessToken: '',
   accessTokenExpiry: 0,
@@ -154,6 +159,59 @@ let state = {
   quotaExceeded: false,
   quotaMessage: null
 };
+
+const twitch = { socket: null, connected: false, reconnectTimer: null, lastError: null };
+
+function twitchStatus() {
+  return {
+    enabled: config.twitchEnabled === true,
+    configured: !!(config.twitchUsername && config.twitchToken && config.twitchChannel),
+    connected: twitch.connected,
+    channel: config.twitchChannel || null,
+    lastError: twitch.lastError
+  };
+}
+
+function startTwitchConnector() {
+  if (!config.twitchEnabled || !config.twitchUsername || !config.twitchToken || !config.twitchChannel) return;
+  if (twitch.socket) return;
+  const channel = String(config.twitchChannel).replace(/^#/, '').trim().toLowerCase();
+  if (!channel) return;
+  const socket = net.createConnection({ host: 'irc.chat.twitch.tv', port: 6667 });
+  twitch.socket = socket;
+  let buffer = '';
+  socket.setEncoding('utf8');
+  socket.on('connect', () => {
+    socket.write(`PASS oauth:${String(config.twitchToken).replace(/^oauth:/i, '')}\r\n`);
+    socket.write(`NICK ${String(config.twitchUsername).trim()}\r\n`);
+    socket.write(`JOIN #${channel}\r\n`);
+  });
+  socket.on('data', chunk => {
+    buffer += chunk;
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (line.startsWith('PING ')) { socket.write('PONG :tmi.twitch.tv\r\n'); continue; }
+      const match = line.match(/^:([^!]+)!.* PRIVMSG #[^ ]+ :([\s\S]*)$/);
+      if (match) addEvent('chat', { name: match[1], message: match[2], source: 'twitch' });
+      if (/ 001 /.test(line)) { twitch.connected = true; twitch.lastError = null; }
+    }
+  });
+  const reconnect = () => {
+    twitch.connected = false;
+    twitch.socket = null;
+    if (config.twitchEnabled && !twitch.reconnectTimer)
+      twitch.reconnectTimer = setTimeout(() => { twitch.reconnectTimer = null; startTwitchConnector(); }, 5000);
+  };
+  socket.on('error', err => { twitch.lastError = err.message; });
+  socket.on('close', reconnect);
+}
+
+function stopTwitchConnector() {
+  if (twitch.reconnectTimer) { clearTimeout(twitch.reconnectTimer); twitch.reconnectTimer = null; }
+  if (twitch.socket) { try { twitch.socket.destroy(); } catch {} }
+  twitch.socket = null; twitch.connected = false;
+}
 
 
 function appendLog(level, message) {
@@ -362,6 +420,10 @@ function safePublicConfig() {
     liveUrl: config.liveUrl,
     clientId: config.clientId,
     clientSecret: config.clientSecret,
+    twitchEnabled: config.twitchEnabled,
+    twitchUsername: config.twitchUsername,
+    twitchToken: config.twitchToken,
+    twitchChannel: config.twitchChannel,
     durationMs: config.durationMs,
     volume: config.volume,
     alertScale: config.alertScale,
@@ -898,7 +960,8 @@ const server = http.createServer(async (req, res) => {
         lastApiError:state.lastApiError,
         quotaExceeded:state.quotaExceeded,
         apiPauseUntil:state.apiPauseUntil,
-        dataDir:DATA
+        dataDir:DATA,
+        connectors:{youtube:{connected:!!config.refreshToken},twitch:twitchStatus()}
       });
     }
     if (req.method === 'GET' && p === '/api/diagnostics') {
@@ -1011,7 +1074,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && p === '/api/config') {
       const raw = await readBody(req); let body={};
       try { body=JSON.parse(raw||'{}'); } catch { return json(res,400,{ok:false,error:'JSON inválido'}); }
-      const allowed=['apiKey','liveUrl','clientId','clientSecret','durationMs','volume','alertScale','alertTemplate','pollSubscribers','autoDetectLive','emoteWallEnabled','emoteMaxOnScreen','emotePerMessage','emoteMinSize','emoteMaxSize','emoteDurationMs','emoteMinGapMs','sceneTheme','sceneCameraStyle','sceneCameraEnabled','sceneMotionEnabled','sceneCameraX','sceneCameraY','sceneCameraWidth','sceneOverlayOpacity','sceneCameraOpacity'];
+      const allowed=['apiKey','liveUrl','clientId','clientSecret','twitchEnabled','twitchUsername','twitchToken','twitchChannel','durationMs','volume','alertScale','alertTemplate','pollSubscribers','autoDetectLive','emoteWallEnabled','emoteMaxOnScreen','emotePerMessage','emoteMinSize','emoteMaxSize','emoteDurationMs','emoteMinGapMs','sceneTheme','sceneCameraStyle','sceneCameraEnabled','sceneMotionEnabled','sceneCameraX','sceneCameraY','sceneCameraWidth','sceneOverlayOpacity','sceneCameraOpacity'];
       const previousLiveUrl = config.liveUrl;
       if (Object.prototype.hasOwnProperty.call(body,'liveUrl') && /apps\.googleusercontent\.com/i.test(String(body.liveUrl||''))) body.liveUrl = previousLiveUrl || '';
       for (const k of allowed) if (Object.prototype.hasOwnProperty.call(body,k)) config[k]=body[k];
@@ -1036,6 +1099,8 @@ const server = http.createServer(async (req, res) => {
       config.sceneOverlayOpacity = Math.max(0.2, Math.min(1, Number(config.sceneOverlayOpacity??1)));
       config.sceneCameraOpacity = Math.max(0.2, Math.min(1, Number(config.sceneCameraOpacity??1)));
       saveConfig();
+      stopTwitchConnector();
+      startTwitchConnector();
       pushNamedStreamEvent('settings', {id:Date.now(), ...overlaySettingsPayload()});
       state.live.lastLookupAt=0;
       if (previousLiveUrl !== config.liveUrl) {
@@ -1103,6 +1168,7 @@ server.listen(PORT, HOST, () => {
   console.log(`OBS    : ${BASE_URL}/overlay`);
   console.log('Feche esta janela para encerrar o programa.');
   console.log('====================================================');
+  startTwitchConnector();
   setTimeout(() => {
     const target = `${BASE_URL}/`;
     if (process.platform === 'win32') exec(`start "" "${target}"`);
